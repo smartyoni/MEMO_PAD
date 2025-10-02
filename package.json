@@ -1,0 +1,29 @@
+{
+  "name": "notepad-app",
+  "version": "1.0.0",
+  "description": "Windows 11 style notepad with hyperlink support",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "keywords": [
+    "notepad",
+    "text-editor",
+    "electron"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.notepad.app",
+    "productName": "Notepad",
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico"
+    }
+  }
+}
