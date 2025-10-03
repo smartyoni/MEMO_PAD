@@ -10,9 +10,51 @@ class TabManager {
   }
 
   init() {
-    // 첫 번째 탭 생성
-    this.createTab();
+    // 저장된 탭 복원 또는 첫 번째 탭 생성
+    this.restoreTabs();
     this.setupEventListeners();
+  }
+
+  restoreTabs() {
+    const savedTabs = localStorage.getItem('tabs');
+    const savedActiveTabId = localStorage.getItem('activeTabId');
+
+    if (savedTabs) {
+      try {
+        const tabs = JSON.parse(savedTabs);
+        if (tabs.length > 0) {
+          this.tabs = tabs;
+          this.tabCounter = Math.max(...tabs.map(t => parseInt(t.id.split('-')[1])));
+
+          // 탭 UI 렌더링
+          tabs.forEach(tab => this.renderTab(tab));
+
+          // 활성 탭 복원
+          const activeTabId = savedActiveTabId || tabs[0].id;
+          this.switchTab(activeTabId);
+          return;
+        }
+      } catch (e) {
+        console.error('Failed to restore tabs:', e);
+      }
+    }
+
+    // 저장된 탭이 없으면 새 탭 생성
+    this.createTab();
+  }
+
+  saveTabs() {
+    // 현재 탭 상태 저장
+    if (this.activeTabId) {
+      const currentTab = this.tabs.find(t => t.id === this.activeTabId);
+      if (currentTab) {
+        currentTab.content = editor.value;
+        currentTab.cursorPosition = editor.selectionStart;
+      }
+    }
+
+    localStorage.setItem('tabs', JSON.stringify(this.tabs));
+    localStorage.setItem('activeTabId', this.activeTabId);
   }
 
   createTab(fileName = null, content = '') {
@@ -84,6 +126,9 @@ class TabManager {
       // 하이퍼링크 렌더링
       renderHyperlinks();
       updateStatusBar();
+
+      // 탭 변경 시 저장
+      this.saveTabs();
     }
   }
 
@@ -97,7 +142,7 @@ class TabManager {
     if (!tab.saved) {
       const response = confirm(`${tab.title}의 변경사항을 저장하시겠습니까?`);
       if (response) {
-        saveFile();
+        // 웹 버전에서는 저장 기능 제거됨
       }
     }
 
@@ -113,6 +158,9 @@ class TabManager {
       const newActiveTab = this.tabs[Math.max(0, tabIndex - 1)];
       this.switchTab(newActiveTab.id);
     }
+
+    // 탭 삭제 후 저장
+    this.saveTabs();
   }
 
   getCurrentTab() {
@@ -209,28 +257,39 @@ editor.addEventListener('input', () => {
     tabManager.markTabAsModified(true);
     renderHyperlinks();
     updateStatusBar();
+    tabManager.saveTabs();
   }
 });
 
 editor.addEventListener('click', updateStatusBar);
 editor.addEventListener('keyup', updateStatusBar);
 
+// 복사 및 초기화 버튼
+document.getElementById('copyBtn').onclick = () => {
+  const text = editor.value;
+  if (text) {
+    navigator.clipboard.writeText(text).then(() => {
+      alert('복사되었습니다!');
+    }).catch(() => {
+      // fallback for older browsers
+      editor.select();
+      document.execCommand('copy');
+      alert('복사되었습니다!');
+    });
+  }
+};
+
+document.getElementById('clearBtn').onclick = () => {
+  if (confirm('현재 내용을 모두 삭제하시겠습니까?')) {
+    editor.value = '';
+    tabManager.markTabAsModified(true);
+    renderHyperlinks();
+    updateStatusBar();
+    tabManager.saveTabs();
+    editor.focus();
+  }
+};
+
 // 초기 상태바 업데이트
 updateStatusBar();
 
-// 자동 저장 (5초마다 로컬스토리지에 저장)
-setInterval(() => {
-  const tab = tabManager.getCurrentTab();
-  if (tab && !tab.saved) {
-    localStorage.setItem(`autosave-${tab.id}`, editor.value);
-  }
-}, 5000);
-
-// 페이지 나가기 전 경고
-window.addEventListener('beforeunload', (e) => {
-  const unsavedTab = tabManager.tabs.find(t => !t.saved);
-  if (unsavedTab) {
-    e.preventDefault();
-    e.returnValue = '';
-  }
-});
