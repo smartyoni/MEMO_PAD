@@ -11,30 +11,7 @@
     <!-- 탭 영역 -->
     <div class="tab-container">
       <div class="tabs" id="tabs"></div>
-      <button class="new-tab-btn" id="newTabBtn" title="새 탭 (Ctrl+T)">+</button>
-    </div>
-
-    <!-- 도구 모음 -->
-    <div class="toolbar">
-      <div class="toolbar-left">
-        <button class="toolbar-btn" id="newBtn" title="새로 만들기 (Ctrl+N)">
-          <span>📄</span> 새로 만들기
-        </button>
-        <button class="toolbar-btn" id="openBtn" title="열기 (Ctrl+O)">
-          <span>📂</span> 열기
-        </button>
-        <button class="toolbar-btn" id="saveBtn" title="저장 (Ctrl+S)">
-          <span>💾</span> 저장
-        </button>
-      </div>
-      <div class="toolbar-right">
-        <button class="toolbar-btn" id="findBtn" title="찾기 (Ctrl+F)">
-          <span>🔍</span> 찾기
-        </button>
-        <button class="toolbar-btn" id="themeBtn" title="테마 전환">
-          <span id="themeIcon">🌙</span>
-        </button>
-      </div>
+      <button class="new-tab-btn" id="newTabBtn" title="새 탭 추가">+</button>
     </div>
 
     <!-- 편집기 영역 -->
@@ -56,37 +33,6 @@
         <span id="wordCount">0 단어</span>
         <span class="separator">|</span>
         <span id="encoding">UTF-8</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- 찾기/바꾸기 다이얼로그 -->
-  <div class="dialog" id="findDialog">
-    <div class="dialog-content">
-      <div class="dialog-header">
-        <h3>찾기 및 바꾸기</h3>
-        <button class="close-btn" id="closeFindDialog">✕</button>
-      </div>
-      <div class="dialog-body">
-        <div class="input-group">
-          <label>찾을 내용:</label>
-          <input type="text" id="findInput" placeholder="검색어 입력">
-        </div>
-        <div class="input-group">
-          <label>바꿀 내용:</label>
-          <input type="text" id="replaceInput" placeholder="바꿀 내용 입력">
-        </div>
-        <div class="dialog-options">
-          <label>
-            <input type="checkbox" id="caseSensitive">
-            <span>대소문자 구분</span>
-          </label>
-        </div>
-        <div class="dialog-actions">
-          <button class="btn-primary" id="findNextBtn">다음 찾기</button>
-          <button class="btn-secondary" id="replaceBtn">바꾸기</button>
-          <button class="btn-secondary" id="replaceAllBtn">모두 바꾸기</button>
-        </div>
       </div>
     </div>
   </div>
