@@ -162,131 +162,6 @@ function renderHyperlinks() {
   preview.innerHTML = html;
 }
 
-// 찾기/바꾸기 기능
-class FindReplace {
-  constructor() {
-    this.lastSearchTerm = '';
-    this.lastIndex = 0;
-    this.setupEventListeners();
-  }
-
-  setupEventListeners() {
-    document.getElementById('closeFindDialog').onclick = () => this.close();
-    document.getElementById('findNextBtn').onclick = () => this.findNext();
-    document.getElementById('replaceBtn').onclick = () => this.replace();
-    document.getElementById('replaceAllBtn').onclick = () => this.replaceAll();
-
-    // Enter 키로 찾기
-    document.getElementById('findInput').onkeypress = (e) => {
-      if (e.key === 'Enter') this.findNext();
-    };
-  }
-
-  open(replaceMode = false) {
-    const dialog = document.getElementById('findDialog');
-    dialog.classList.add('active');
-    document.getElementById('findInput').focus();
-
-    if (replaceMode) {
-      document.getElementById('replaceInput').parentElement.style.display = 'block';
-    }
-  }
-
-  close() {
-    const dialog = document.getElementById('findDialog');
-    dialog.classList.remove('active');
-  }
-
-  findNext() {
-    const searchTerm = document.getElementById('findInput').value;
-    const caseSensitive = document.getElementById('caseSensitive').checked;
-
-    if (!searchTerm) return;
-
-    let text = editor.value;
-    let searchText = text;
-    let term = searchTerm;
-
-    if (!caseSensitive) {
-      searchText = text.toLowerCase();
-      term = searchTerm.toLowerCase();
-    }
-
-    // 새로운 검색어면 처음부터 시작
-    if (searchTerm !== this.lastSearchTerm) {
-      this.lastIndex = 0;
-      this.lastSearchTerm = searchTerm;
-    }
-
-    const index = searchText.indexOf(term, this.lastIndex);
-
-    if (index !== -1) {
-      editor.focus();
-      editor.setSelectionRange(index, index + searchTerm.length);
-      this.lastIndex = index + 1;
-    } else {
-      // 끝까지 갔으면 처음부터 다시 검색
-      this.lastIndex = 0;
-      const firstIndex = searchText.indexOf(term, 0);
-      if (firstIndex !== -1) {
-        editor.focus();
-        editor.setSelectionRange(firstIndex, firstIndex + searchTerm.length);
-        this.lastIndex = firstIndex + 1;
-      } else {
-        alert('검색 결과가 없습니다.');
-      }
-    }
-  }
-
-  replace() {
-    const searchTerm = document.getElementById('findInput').value;
-    const replaceTerm = document.getElementById('replaceInput').value;
-
-    if (!searchTerm) return;
-
-    const start = editor.selectionStart;
-    const end = editor.selectionEnd;
-    const selectedText = editor.value.substring(start, end);
-
-    if (selectedText === searchTerm) {
-      const before = editor.value.substring(0, start);
-      const after = editor.value.substring(end);
-      editor.value = before + replaceTerm + after;
-      editor.setSelectionRange(start, start + replaceTerm.length);
-
-      tabManager.markTabAsModified(true);
-      renderHyperlinks();
-      this.findNext();
-    } else {
-      this.findNext();
-    }
-  }
-
-  replaceAll() {
-    const searchTerm = document.getElementById('findInput').value;
-    const replaceTerm = document.getElementById('replaceInput').value;
-    const caseSensitive = document.getElementById('caseSensitive').checked;
-
-    if (!searchTerm) return;
-
-    let text = editor.value;
-    const flags = caseSensitive ? 'g' : 'gi';
-    const regex = new RegExp(searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), flags);
-
-    const newText = text.replace(regex, replaceTerm);
-    const count = (text.match(regex) || []).length;
-
-    if (count > 0) {
-      editor.value = newText;
-      tabManager.markTabAsModified(true);
-      renderHyperlinks();
-      alert(`${count}개 항목을 바꿨습니다.`);
-    } else {
-      alert('검색 결과가 없습니다.');
-    }
-  }
-}
-
 // 상태바 업데이트
 function updateStatusBar() {
   const text = editor.value;
@@ -309,112 +184,39 @@ function updateStatusBar() {
   document.getElementById('wordCount').textContent = `${words.length} 단어`;
 }
 
-// 파일 작업 (웹 버전)
-function openFile() {
-  const fileInput = document.getElementById('fileInput');
-  fileInput.onchange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        tabManager.createTab(file.name, event.target.result);
-      };
-      reader.readAsText(file);
-    }
-    fileInput.value = ''; // 리셋
-  };
-  fileInput.click();
-}
-
-function saveFile() {
-  const tab = tabManager.getCurrentTab();
-  const content = editor.value;
-  const fileName = tab.fileName || 'untitled.txt';
-
-  // Blob 생성 및 다운로드
-  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = fileName;
-  a.click();
-  URL.revokeObjectURL(url);
-
-  tab.saved = true;
-  tabManager.updateTabTitle(fileName.replace(' *', ''));
-}
-
-// 테마 전환
-let isDarkMode = false;
-function toggleTheme() {
-  isDarkMode = !isDarkMode;
-  document.body.classList.toggle('dark-mode', isDarkMode);
-  document.getElementById('themeIcon').textContent = isDarkMode ? '☀️' : '🌙';
-  localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
-}
 
 // 초기화
 const editor = document.getElementById('editor');
 const tabManager = new TabManager();
-const findReplace = new FindReplace();
 
-// 이벤트 리스너
-editor.addEventListener('input', () => {
+// 조합 중 여부 체크 (모바일 한글 입력 등)
+let isComposing = false;
+
+editor.addEventListener('compositionstart', () => {
+  isComposing = true;
+});
+
+editor.addEventListener('compositionend', () => {
+  isComposing = false;
   tabManager.markTabAsModified(true);
   renderHyperlinks();
   updateStatusBar();
 });
 
-editor.addEventListener('click', updateStatusBar);
-editor.addEventListener('keyup', updateStatusBar);
-
-// 도구 모음 버튼
-document.getElementById('newBtn').onclick = () => tabManager.createTab();
-document.getElementById('openBtn').onclick = openFile;
-document.getElementById('saveBtn').onclick = saveFile;
-document.getElementById('findBtn').onclick = () => findReplace.open(true);
-document.getElementById('themeBtn').onclick = toggleTheme;
-
-// 키보드 단축키
-document.addEventListener('keydown', (e) => {
-  if (e.ctrlKey || e.metaKey) {
-    switch(e.key.toLowerCase()) {
-      case 'n':
-        e.preventDefault();
-        tabManager.createTab();
-        break;
-      case 't':
-        e.preventDefault();
-        tabManager.createTab();
-        break;
-      case 'o':
-        e.preventDefault();
-        openFile();
-        break;
-      case 's':
-        e.preventDefault();
-        saveFile();
-        break;
-      case 'f':
-        e.preventDefault();
-        findReplace.open(false);
-        break;
-      case 'h':
-        e.preventDefault();
-        findReplace.open(true);
-        break;
-    }
+// 이벤트 리스너
+editor.addEventListener('input', () => {
+  if (!isComposing) {
+    tabManager.markTabAsModified(true);
+    renderHyperlinks();
+    updateStatusBar();
   }
 });
 
+editor.addEventListener('click', updateStatusBar);
+editor.addEventListener('keyup', updateStatusBar);
+
 // 초기 상태바 업데이트
 updateStatusBar();
-
-// 저장된 테마 적용
-const savedTheme = localStorage.getItem('theme');
-if (savedTheme === 'dark') {
-  toggleTheme();
-}
 
 // 자동 저장 (5초마다 로컬스토리지에 저장)
 setInterval(() => {
